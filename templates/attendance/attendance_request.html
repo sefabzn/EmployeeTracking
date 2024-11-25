@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h2 class="card-title">Attendance</h2>
+                    <div id="current-time" class="display-4 mb-4"></div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if not is_checked_in %}
+                        <input type="hidden" name="action" value="check_in">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Check In
+                        </button>
+                        {% else %}
+                        <input type="hidden" name="action" value="check_out">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="fas fa-sign-out-alt"></i> Check Out
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTime() {
+    const now = new Date();
+    document.getElementById('current-time').textContent = 
+        now.toLocaleTimeString('en-US', { hour12: false });
+}
+setInterval(updateTime, 1000);
+updateTime();
+</script>
+{% endblock %} 

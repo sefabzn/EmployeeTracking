@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">All Employees Attendance History</h2>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>Check In</th>
+                            <th>Check Out</th>
+                            <th>Status</th>
+                            <th>Work Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attendance in attendances %}
+                        <tr>
+                            <td>{{ attendance.employee.get_full_name }}</td>
+                            <td>{{ attendance.date }}</td>
+                            <td>{{ attendance.check_in|time }}</td>
+                            <td>{{ attendance.check_out|time|default:"-" }}</td>
+                            <td>
+                                {% if "Late" in attendance.status %}
+                                <span class="badge bg-warning">{{ attendance.status }}</span>
+                                {% else %}
+                                <span class="badge bg-success">{{ attendance.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if attendance.check_out %}
+                                    {{ attendance.work_hours|floatformat:2 }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No attendance records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

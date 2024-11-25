@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Monthly Working Hours Summary - {{ current_month }}</h4>
+            <div class="btn-group">
+                <a href="?month={{ month|add:"-1" }}&year={% if month == 1 %}{{ year|add:"-1" }}{% else %}{{ year }}{% endif %}" 
+                   class="btn btn-outline-primary">
+                    <i class="fas fa-chevron-left"></i> Previous Month
+                </a>
+                <a href="?month={{ month|add:"1" }}&year={% if month == 12 %}{{ year|add:"1" }}{% else %}{{ year }}{% endif %}" 
+                   class="btn btn-outline-primary">
+                    Next Month <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Total Hours</th>
+                            <th>Working Days</th>
+                            <th>Avg. Daily Hours</th>
+                            <th>Late Check-ins</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in monthly_stats %}
+                        <tr>
+                            <td>{{ stat.employee.get_full_name }}</td>
+                            <td>{{ stat.total_hours|floatformat:2 }}</td>
+                            <td>{{ stat.working_days }}</td>
+                            <td>{{ stat.avg_daily_hours|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge {% if stat.late_check_ins > 0 %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ stat.late_check_ins }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No data available for this month</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

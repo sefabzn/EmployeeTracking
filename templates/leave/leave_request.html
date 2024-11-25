@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Request Leaves</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Submit Request</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

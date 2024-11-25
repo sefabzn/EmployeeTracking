@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Employee Login</h2>
+                    {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <small><a href="{% url 'accounts:admin_login' %}">Admin Login</a></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

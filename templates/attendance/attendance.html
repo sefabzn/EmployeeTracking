@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2 class="card-title">Attendance History</h2>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Check In</th>
+                        <th>Check Out</th>
+                        <th>Status</th>
+                        <th>Work Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_records %}
+                    <tr>
+                        <td>{{ record.date }}</td>
+                        <td>{{ record.check_in|time }}</td>
+                        <td>{{ record.check_out|time|default:"-" }}</td>
+                        <td>
+                            {% if record.late_minutes > 0 %}
+                            <span class="badge bg-warning">Late</span>
+                            {% else %}
+                            <span class="badge bg-success">On Time</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.work_hours|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No attendance records found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

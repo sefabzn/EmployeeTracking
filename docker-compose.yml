@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+      - DB_HOST=db
+      - DB_NAME=employee_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=employee_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    command: celery -A config worker -l INFO
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    environment:
+      - DEBUG=1
+      - DB_HOST=db
+      - DB_NAME=employee_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP=True
+
+  celery-beat:
+    build: .
+    command: celery -A config beat -l INFO
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    environment:
+      - DEBUG=1
+      - DB_HOST=db
+      - DB_NAME=employee_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP=True
+
+volumes:
+  postgres_data:

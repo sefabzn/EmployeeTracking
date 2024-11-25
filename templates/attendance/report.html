@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Attendance Report</h2>
+            <p class="text-muted">Period: {{ start_date|date }} to {{ end_date|date }}</p>
+
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h3 class="card-title">Total Days</h3>
+                            <p class="display-4">{{ total_days }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h3 class="card-title">On Time</h3>
+                            <p class="display-4">{{ on_time_days }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h3 class="card-title">Late Days</h3>
+                            <p class="display-4">{{ late_days }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h3 class="card-title">Avg Hours</h3>
+                            <p class="display-4">{{ avg_work_hours }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h3>Leave Requests</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leave in leave_requests %}
+                            <tr>
+                                <td>{{ leave.start_date|date }}</td>
+                                <td>{{ leave.end_date|date }}</td>
+                                <td>
+                                    <span class="badge bg-{{ leave.get_status_color }}">
+                                        {{ leave.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ leave.reason }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No leave requests found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

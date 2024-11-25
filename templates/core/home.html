@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Attendance Card -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h3 class="card-title">Attendance</h3>
+                    <div id="current-time" class="display-4 mb-3"></div>
+                    <div class="attendance-status mb-3">
+                        Status: 
+                        <span class="badge {% if is_checked_in %}bg-success{% else %}bg-warning{% endif %}">
+                            {% if is_checked_in %}Checked In{% else %}Checked Out{% endif %}
+                        </span>
+                    </div>
+                    <form method="post" action="{% url 'attendance:request' %}">
+                        {% csrf_token %}
+                        {% if not is_checked_in %}
+                        <input type="hidden" name="action" value="check_in">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-sign-in-alt"></i> Check In
+                        </button>
+                        {% else %}
+                        <input type="hidden" name="action" value="check_out">
+                        <button type="submit" class="btn btn-danger btn-lg w-100">
+                            <i class="fas fa-sign-out-alt"></i> Check Out
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Card -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">Monthly Statistics</h3>
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <h5>Total Days</h5>
+                            <div class="h2">{{ attendance_stats.total_days }}</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h5>On Time</h5>
+                            <div class="h2">{{ attendance_stats.on_time_days }}</div>
+                        </div>
+                        <div class="col-6">
+                            <h5>Late Days</h5>
+                            <div class="h2">{{ attendance_stats.late_days }}</div>
+                        </div>
+                        <div class="col-6">
+                            <h5>Attendance Rate</h5>
+                            <div class="h2">{{ attendance_stats.attendance_rate|floatformat:1 }}%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Card -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">Recent Activity</h3>
+                    <div class="tab-pane fade" id="recent-activity" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                {% if activities %}
+                                    <div class="list-group">
+                                        {% for activity in activities %}
+                                            <div class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                                    <div>
+                                                        {% if activity.type == 'late_checkin' %}
+                                                            <span class="badge bg-warning text-dark me-2">
+                                                                <i class="fas fa-clock me-1"></i>Late Check-in
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-info text-white me-2">
+                                                                <i class="fas fa-calendar me-1"></i>Leave Request
+                                                            </span>
+                                                        {% endif %}
+                                                        <span>{{ activity.message }}</span>
+                                                        
+                                                        {% if activity.type == 'leave_request' and activity.status %}
+                                                            <span class="badge {% if activity.status == 'approved' %}bg-success{% elif activity.status == 'rejected' %}bg-danger{% else %}bg-secondary{% endif %} ms-2">
+                                                                {{ activity.status|title }}
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        {{ activity.date|timesince }} ago
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fas fa-info-circle me-2"></i>No recent activities
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Monthly Attendance</h3>
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if not user.is_admin %}
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Leave Balance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 text-center">
+                                <h6 class="text-muted mb-1">Annual Leave</h6>
+                                <h3 class="mb-0">{{ annual_leave }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 text-center">
+                                <h6 class="text-muted mb-1">Used</h6>
+                                <h3 class="mb-0">{{ used_leave }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 text-center">
+                                <h6 class="text-muted mb-1">Remaining</h6>
+                                <h3 class="mb-0">{{ remaining_leave }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function updateTime() {
+    const now = new Date();
+    document.getElementById('current-time').textContent = 
+        now.toLocaleTimeString('en-US', { hour12: false });
+}
+
+setInterval(updateTime, 1000);
+updateTime();
+
+// Initialize attendance chart
+(function() {
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const monthlyData = JSON.parse('{{ monthly_attendance|safe|escapejs }}');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: monthlyData.map(item => item.month),
+            datasets: [{
+                label: 'On Time',
+                data: monthlyData.map(item => item.on_time),
+                backgroundColor: '#28a745'
+            }, {
+                label: 'Late',
+                data: monthlyData.map(item => item.late),
+                backgroundColor: '#ffc107'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true }
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.list-group-item {
+    transition: all 0.2s ease;
+    border-left: 4px solid transparent;
+}
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+.list-group-item:has(.bg-warning) {
+    border-left-color: #ffc107;
+}
+.list-group-item:has(.bg-info) {
+    border-left-color: #17a2b8;
+}
+.badge {
+    font-size: 0.8rem;
+}
+.border.rounded {
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+.border.rounded:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+}
+h3 {
+    color: #2c3e50;
+}
+.text-muted {
+    color: #6c757d !important;
+}
+</style>
+{% endblock %}
+
+{% if user.is_admin %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show employee tracking tab by default for admin
+        var employeeTrackingTab = document.querySelector('#employee-tracking-tab');
+        if (employeeTrackingTab) {
+            var tab = new bootstrap.Tab(employeeTrackingTab);
+            tab.show();
+        }
+    });
+</script>
+{% endif %}

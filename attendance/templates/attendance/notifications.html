@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>All Notifications</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            {% if notifications %}
+                <div class="list-group">
+                    {% for notification in notifications %}
+                        <div class="list-group-item {% if not notification.is_read %}bg-light{% endif %}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ notification.message }}</h6>
+                                <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                            </div>
+                            <small class="badge {% if notification.notification_type == 'late_checkin' %}bg-warning text-dark{% else %}bg-info text-white{% endif %}">
+                                {{ notification.get_notification_type_display }}
+                            </small>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center">No notifications found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

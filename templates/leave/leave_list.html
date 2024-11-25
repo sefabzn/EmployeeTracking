@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Leave Requests</h2>
+        {% if not user.is_admin %}
+        <a href="{% url 'leave:request' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Request
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date Requested</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    {% if user.is_admin %}
+                    <th>Employee</th>
+                    <th>Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for leave in leave_requests %}
+                <tr>
+                    <td>{{ leave.created_at|date }}</td>
+                    <td>{{ leave.start_date }}</td>
+                    <td>{{ leave.end_date }}</td>
+                    <td>
+                        <span class="badge bg-{{ leave.get_status_color }}">
+                            {{ leave.get_status_display }}
+                        </span>
+                    </td>
+                    {% if user.is_admin %}
+                    <td>{{ leave.employee.get_full_name }}</td>
+                    <td>
+                        {% if leave.status == 'pending' %}
+                        <a href="{% url 'leave:approve' leave.pk %}" class="btn btn-sm btn-success">
+                            <i class="fas fa-check"></i>
+                        </a>
+                        <a href="{% url 'leave:reject' leave.pk %}" class="btn btn-sm btn-danger">
+                            <i class="fas fa-times"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if user.is_admin %}6{% else %}4{% endif %}" class="text-center">
+                        No leave requests found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
