@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.conf import settings
 
 class Role(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -64,3 +65,17 @@ class Employee(AbstractBaseUser, PermissionsMixin):
             self.annual_leave_days = 0
             self.used_leave_days = 0
         super().save(*args, **kwargs)
+
+        
+class LeavePermission(models.Model):
+    employee = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='leave_permission')
+    max_leaves_per_year = models.PositiveIntegerField(default=20)
+    can_carry_forward = models.BooleanField(default=False)
+    max_carry_forward_days = models.PositiveIntegerField(default=0)
+    min_days_before_request = models.PositiveIntegerField(default=1)
+    requires_approval = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Leave Permission - {self.employee.get_full_name()}"
