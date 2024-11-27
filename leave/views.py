@@ -66,13 +66,15 @@ def approve_leave(request, pk):
     leave_request.employee.save()
     
     if leave_request.employee.remaining_leave_days < 3:
-        admins = Employee.objects.filter(is_admin=True)
-        for admin in admins:
-            send_notification.delay(
-                admin.id,
-                'Low Leave Balance Alert',
-                f"Low leave balance alert: {leave_request.employee.get_full_name()} has {leave_request.employee.remaining_leave_days:.1f} days remaining"
-            )
+        from notifications.tasks import should_send_low_balance_notification
+        if should_send_low_balance_notification(leave_request.employee):
+            admins = Employee.objects.filter(is_admin=True)
+            for admin in admins:
+                send_notification.delay(
+                    admin.id,
+                    'Low Leave Balance Alert',
+                    f"Low leave balance alert: {leave_request.employee.get_full_name()} has {leave_request.employee.remaining_leave_days:.1f} days remaining"
+                )
     
     messages.success(request, f'Leave request approved. {leave_days} days deducted from annual leave.')
     return redirect('leave:leave_list')

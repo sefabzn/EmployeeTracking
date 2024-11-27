@@ -84,15 +84,15 @@ def check_leave_balance():
     for employee in employees:
         remaining_days = employee.remaining_leave_days
         if remaining_days is not None and remaining_days < 3:
-            admins = Employee.objects.filter(is_admin=True)
-            
-            for admin in admins:
-                send_notification.delay(
-                    admin.id,
-                    'Low Leave Balance Alert',
-                    f"Low leave balance alert: {employee.get_full_name()} has {remaining_days:.1f} days remaining",
-                    'leave_balance'
-                )
+            if should_send_low_balance_notification(employee):
+                admins = Employee.objects.filter(is_admin=True)
+                for admin in admins:
+                    send_notification.delay(
+                        admin.id,
+                        'Low Leave Balance Alert',
+                        f"Low leave balance alert: {employee.get_full_name()} has {remaining_days:.1f} days remaining",
+                        'leave_balance'
+                    )
 
 @shared_task
 def generate_monthly_report():
@@ -141,25 +141,14 @@ def generate_monthly_report():
             'monthly_report'
         )
 
-@shared_task
-def check_low_leave_balance():
-    Employee = get_user_model()
-    employees = Employee.objects.filter(
-        is_admin=False,  # Only check non-admin employees
-        is_active=True   # Only check active employees
-    )
+def should_send_low_balance_notification(employee):
+    # Check if we've sent a notification in the last 24 hours
+    last_notification = Notification.objects.filter(
+        recipient__is_admin=True,
+        notification_type='leave_balance',
+        message__contains=employee.get_full_name(),
+        created_at__gte=timezone.now() - timezone.timedelta(hours=24)
+    ).exists()
     
-    for employee in employees:
-        remaining_days = employee.remaining_leave_days
-        if remaining_days is not None and remaining_days < 3:
-            # Get all admin users
-            admins = Employee.objects.filter(is_admin=True)
-            
-            # Create notification for each admin
-            for admin in admins:
-                Notification.objects.create(
-                    recipient=admin,
-                    title='Low Leave Balance Alert',
-                    message=f"Low leave balance alert: {employee.get_full_name()} has {remaining_days:.1f} days remaining",
-                    notification_type='leave_balance'
-                )
+    return not last_notification
+
