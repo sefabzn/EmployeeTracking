@@ -4,11 +4,7 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Leave Requests</h2>
-        {% if not user.is_admin %}
-        <a href="{% url 'leave:request' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> New Request
-        </a>
-        {% endif %}
+        <a href="{% url 'leave:request' %}" class="btn btn-primary">Request Leave</a>
     </div>
 
     <div class="table-responsive">
@@ -18,6 +14,7 @@
                     <th>Date Requested</th>
                     <th>Start Date</th>
                     <th>End Date</th>
+                    <th>Reason</th>
                     <th>Status</th>
                     {% if user.is_admin %}
                     <th>Employee</th>
@@ -28,31 +25,28 @@
             <tbody>
                 {% for leave in leave_requests %}
                 <tr>
-                    <td>{{ leave.created_at|date }}</td>
-                    <td>{{ leave.start_date }}</td>
-                    <td>{{ leave.end_date }}</td>
+                    <td>{{ leave.created_at|date:"M. d, Y" }}</td>
+                    <td>{{ leave.start_date|date:"M. d, Y" }}</td>
+                    <td>{{ leave.end_date|date:"M. d, Y" }}</td>
+                    <td>{{ leave.reason }}</td>
                     <td>
-                        <span class="badge bg-{{ leave.get_status_color }}">
-                            {{ leave.get_status_display }}
+                        <span class="badge {% if leave.status == 'approved' %}bg-success{% elif leave.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}">
+                            {{ leave.status|title }}
                         </span>
                     </td>
                     {% if user.is_admin %}
                     <td>{{ leave.employee.get_full_name }}</td>
                     <td>
                         {% if leave.status == 'pending' %}
-                        <a href="{% url 'leave:approve' leave.pk %}" class="btn btn-sm btn-success">
-                            <i class="fas fa-check"></i>
-                        </a>
-                        <a href="{% url 'leave:reject' leave.pk %}" class="btn btn-sm btn-danger">
-                            <i class="fas fa-times"></i>
-                        </a>
+                        <a href="{% url 'leave:approve' leave.id %}" class="btn btn-sm btn-success">Approve</a>
+                        <a href="{% url 'leave:reject' leave.id %}" class="btn btn-sm btn-danger">Reject</a>
                         {% endif %}
                     </td>
                     {% endif %}
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="{% if user.is_admin %}6{% else %}4{% endif %}" class="text-center">
+                    <td colspan="{% if user.is_admin %}7{% else %}5{% endif %}" class="text-center">
                         No leave requests found.
                     </td>
                 </tr>
