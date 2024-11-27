@@ -1,4 +1,4 @@
-from .models import AttendanceNotification
+from notifications.models import Notification
 
 def notifications(request):
     context = {
@@ -6,13 +6,13 @@ def notifications(request):
         'recent_notifications': []
     }
     
-    if request.user.is_authenticated and request.user.is_admin:
-        context['unread_notifications_count'] = AttendanceNotification.objects.filter(
-            employee=request.user,
+    if request.user.is_authenticated:
+        context['unread_notifications_count'] = Notification.objects.filter(
+            recipient=request.user,
             is_read=False
         ).count()
-        context['recent_notifications'] = AttendanceNotification.objects.filter(
-            employee=request.user
+        context['recent_notifications'] = Notification.objects.filter(
+            recipient=request.user
         ).order_by('-created_at')[:5]
     
     return context 

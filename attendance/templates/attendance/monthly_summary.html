@@ -29,21 +29,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for stat in monthly_stats %}
+                        {% for data in summary_data %}
                         <tr>
-                            <td>{{ stat.employee.get_full_name }}</td>
-                            <td>{{ stat.total_hours|floatformat:2 }}</td>
-                            <td>{{ stat.working_days }}</td>
-                            <td>{{ stat.avg_daily_hours|floatformat:2 }}</td>
-                            <td>
-                                <span class="badge {% if stat.late_check_ins > 0 %}bg-warning{% else %}bg-success{% endif %}">
-                                    {{ stat.late_check_ins }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center">No data available for this month</td>
+                            <td>{{ data.employee.get_full_name }}</td>
+                            <td>{{ data.total_hours }} hours</td>
                         </tr>
                         {% endfor %}
                     </tbody>

@@ -8,29 +8,36 @@ from accounts.models import Employee
 from attendance.models import Attendance
 from leave.models import LeaveRequest
 from django.contrib.auth import get_user_model
-from attendance.models import AttendanceNotification
 
 @shared_task
-def send_notification(user_id, title, message):
-    # Create notification in database
+def send_notification(user_id, title=None, message=None, notification_type=None):
+    # Create the notification in database
     notification = Notification.objects.create(
         recipient_id=user_id,
         title=title,
-        message=message
+        message=message or '',
+        notification_type=notification_type or 'other'
     )
 
-    # Send WebSocket notification
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        f"user_{user_id}",
-        {
-            "type": "notification_message",
-            "message": {
-                "title": title,
-                "message": message
-            }
-        }
-    )
+    # Try to send real-time notification, but don't fail if it's not available
+    try:
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            async_to_sync(channel_layer.group_send)(
+                f"user_{user_id}",
+                {
+                    "type": "notification_message",
+                    "message": {
+                        "title": title,
+                        "message": message,
+                        "notification_type": notification_type
+                    }
+                }
+            )
+    except Exception:
+        # Log the error but don't fail the task
+        pass
+
     return notification.id
 
 @shared_task
@@ -52,7 +59,8 @@ def check_late_arrivals():
         send_notification.delay(
             attendance.employee.id,
             'Late Arrival Notice',
-            f'You arrived {minutes_late} minutes late today.'
+            f'You arrived {minutes_late} minutes late today.',
+            'late_checkin'
         )
         
         # Send notification to admin
@@ -61,29 +69,29 @@ def check_late_arrivals():
             send_notification.delay(
                 admin.id,
                 'Employee Late Arrival',
-                f'{attendance.employee.get_full_name()} arrived {minutes_late} minutes late today.'
+                f'{attendance.employee.get_full_name()} arrived {minutes_late} minutes late today.',
+                'late_checkin'
             )
 
 @shared_task
 def check_leave_balance():
     Employee = get_user_model()
     employees = Employee.objects.filter(
-        is_admin=False,  # Only check non-admin employees
-        annual_leave_days__gt=0,  # Only check employees with leave balance
-        used_leave_days__gt=0  # Only check employees who have used leave
+        is_admin=False,
+        is_active=True
     )
     
     for employee in employees:
         remaining_days = employee.remaining_leave_days
         if remaining_days is not None and remaining_days < 3:
-            # Get all admin users
             admins = Employee.objects.filter(is_admin=True)
             
-            # Create notification for each admin
             for admin in admins:
-                AttendanceNotification.objects.create(
-                    employee=admin,
-                    message=f"Low leave balance alert: {employee.get_full_name()} has {remaining_days:.1f} days remaining"
+                send_notification.delay(
+                    admin.id,
+                    'Low Leave Balance Alert',
+                    f"Low leave balance alert: {employee.get_full_name()} has {remaining_days:.1f} days remaining",
+                    'leave_balance'
                 )
 
 @shared_task
@@ -129,5 +137,29 @@ def generate_monthly_report():
         send_notification.delay(
             employee.id,
             'Monthly Attendance Report',
-            report_message
+            report_message,
+            'monthly_report'
         )
+
+@shared_task
+def check_low_leave_balance():
+    Employee = get_user_model()
+    employees = Employee.objects.filter(
+        is_admin=False,  # Only check non-admin employees
+        is_active=True   # Only check active employees
+    )
+    
+    for employee in employees:
+        remaining_days = employee.remaining_leave_days
+        if remaining_days is not None and remaining_days < 3:
+            # Get all admin users
+            admins = Employee.objects.filter(is_admin=True)
+            
+            # Create notification for each admin
+            for admin in admins:
+                Notification.objects.create(
+                    recipient=admin,
+                    title='Low Leave Balance Alert',
+                    message=f"Low leave balance alert: {employee.get_full_name()} has {remaining_days:.1f} days remaining",
+                    notification_type='leave_balance'
+                )

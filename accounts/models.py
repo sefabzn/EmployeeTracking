@@ -11,10 +11,14 @@ class Role(models.Model):
 class EmployeeManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError('The Email field must be set')
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+            raise ValueError('Users must have an email address')
+        
+        user = self.model(
+            email=self.normalize_email(email),
+            **extra_fields
+        )
         user.set_password(password)
+        user.annual_leave_days = 15  # Set initial leave days
         user.save(using=self._db)
         return user
 

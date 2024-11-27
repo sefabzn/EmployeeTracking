@@ -159,7 +159,11 @@ CELERY_BEAT_SCHEDULE = {
     'generate-monthly-report': {
         'task': 'notifications.tasks.generate_monthly_report',
         'schedule': crontab(0, 0, day_of_month='1')  # Run on 1st of every month
-    }
+    },
+    'check-low-leave-balance': {
+        'task': 'notifications.tasks.check_low_leave_balance',
+        'schedule': crontab(hour=8, minute=0),  # Run daily at 9 AM
+    },
 }
 
 AUTH_USER_MODEL = 'accounts.Employee'

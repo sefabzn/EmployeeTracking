@@ -11,8 +11,10 @@
                         <tr>
                             <th>Employee</th>
                             <th>Date</th>
-                            <th>Check In</th>
-                            <th>Check Out</th>
+                            <th>First Check In</th>
+                            <th>Last Check Out</th>
+                            <th>Check In Count</th>
+                            <th>Check Out Count</th>
                             <th>Status</th>
                             <th>Work Hours</th>
                         </tr>
@@ -22,17 +24,23 @@
                         <tr>
                             <td>{{ attendance.employee.get_full_name }}</td>
                             <td>{{ attendance.date }}</td>
-                            <td>{{ attendance.check_in|time }}</td>
-                            <td>{{ attendance.check_out|time|default:"-" }}</td>
+                            <td>{{ attendance.first_check_in|time }}</td>
+                            <td>{{ attendance.last_check_out|time|default:"-" }}</td>
+                            <td>{{ attendance.check_in_count }}</td>
+                            <td>{{ attendance.check_out_count }}</td>
                             <td>
-                                {% if "Late" in attendance.status %}
-                                <span class="badge bg-warning">{{ attendance.status }}</span>
+                                {% if attendance.first_check_in %}
+                                    {% if attendance.first_check_in|time > "08:00:00" %}
+                                        <span class="badge bg-warning">Late</span>
+                                    {% else %}
+                                        <span class="badge bg-success">On Time</span>
+                                    {% endif %}
                                 {% else %}
-                                <span class="badge bg-success">{{ attendance.status }}</span>
+                                    <span class="badge bg-danger">Absent</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if attendance.check_out %}
+                                {% if attendance.last_check_out %}
                                     {{ attendance.work_hours|floatformat:2 }}
                                 {% else %}
                                     -
