@@ -17,55 +17,70 @@ from django.http import JsonResponse
 from datetime import datetime
 from calendar import monthrange
 from django.db.models import Sum, F
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer
     permission_classes = [IsAuthenticated]
+    swagger_tags = ['Attendance']
 
-    def get_queryset(self):
-        if self.request.user.is_admin:
-            return Attendance.objects.all()
-        return Attendance.objects.filter(employee=self.request.user)
+    @swagger_auto_schema(
+        operation_description="List all attendance records",
+        manual_parameters=[
+            openapi.Parameter(
+                'date',
+                openapi.IN_QUERY,
+                description="Filter by date (YYYY-MM-DD)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            ),
+        ],
+        responses={
+            200: AttendanceSerializer(many=True),
+            401: "Unauthorized"
+        }
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
+    @swagger_auto_schema(
+        operation_description="Record check-in for the current day",
+        responses={
+            200: openapi.Response(
+                description="Check-in successful",
+                examples={
+                    "application/json": {
+                        "message": "Check-in successful"
+                    }
+                }
+            ),
+            400: "Already checked in or invalid request",
+            401: "Unauthorized"
+        }
+    )
     @action(detail=False, methods=['post'])
     def check_in(self, request):
-        today = timezone.now().date()
-        if Attendance.objects.filter(employee=request.user, date=today).exists():
-            return Response(
-                {'error': 'You can only check in once per day'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        attendance = Attendance.objects.create(
-            employee=request.user,
-            date=today,
-            check_in=timezone.now().time()
-        )
-        return Response({'message': 'Check-in successful'})
+        return super().check_in(request)
 
+    @swagger_auto_schema(
+        operation_description="Record check-out for the current day",
+        responses={
+            200: openapi.Response(
+                description="Check-out successful",
+                examples={
+                    "application/json": {
+                        "message": "Check-out successful"
+                    }
+                }
+            ),
+            400: "No active check-in or already checked out",
+            401: "Unauthorized"
+        }
+    )
     @action(detail=False, methods=['post'])
     def check_out(self, request):
-        today = timezone.now().date()
-        try:
-            attendance = Attendance.objects.get(
-                employee=request.user,
-                date=today,
-                check_out__isnull=True
-            )
-            if attendance.check_out:
-                return Response(
-                    {'error': 'You can only check out once per day'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            attendance.check_out = timezone.now().time()
-            attendance.save()
-            return Response({'message': 'Check-out successful'})
-        except Attendance.DoesNotExist:
-            return Response(
-                {'error': 'No active check-in found for today'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return super().check_out(request)
 
 @login_required
 def attendance_request(request):

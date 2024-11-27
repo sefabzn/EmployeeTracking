@@ -16,6 +16,8 @@ from django.contrib.auth.decorators import user_passes_test
 from leave.models import LeaveRequest
 from notifications.tasks import send_notification
 from datetime import datetime
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -88,6 +90,7 @@ def logout_view(request):
 class EmployeeViewSet(viewsets.ModelViewSet):
     serializer_class = EmployeeSerializer
     permission_classes = [IsAuthenticated]
+    swagger_tags = ['Employees']
 
     def get_queryset(self):
         if self.request.user.is_admin:
@@ -169,24 +172,49 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         except Notification.DoesNotExist:
             return Response({'status': 'error', 'message': 'Notification not found'}, status=404)
 
-@action(detail=True, methods=['get', 'put'])
-def leave_permissions(self, request, pk=None):
-    if not request.user.is_admin:
-        return Response(
-            {"error": "Only administrators can manage leave permissions"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    employee = self.get_object()
-    
-    if request.method == 'GET':
+    @swagger_auto_schema(
+        operation_description="Get leave permissions for an employee",
+        responses={
+            200: LeavePermissionSerializer,
+            403: "Permission denied - Admin only",
+            404: "Employee not found"
+        }
+    )
+    @action(detail=True, methods=['get'])
+    def get_leave_permissions(self, request, pk=None):
+        if not request.user.is_admin:
+            return Response(
+                {"error": "Only administrators can manage leave permissions"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        employee = self.get_object()
         permission, created = LeavePermission.objects.get_or_create(employee=employee)
         serializer = LeavePermissionSerializer(permission)
         return Response(serializer.data)
-    
-    elif request.method == 'PUT':
+
+    @swagger_auto_schema(
+        operation_description="Update leave permissions for an employee",
+        request_body=LeavePermissionSerializer,
+        responses={
+            200: LeavePermissionSerializer,
+            400: "Bad Request",
+            403: "Permission denied - Admin only",
+            404: "Employee not found"
+        }
+    )
+    @action(detail=True, methods=['put'])
+    def update_leave_permissions(self, request, pk=None):
+        if not request.user.is_admin:
+            return Response(
+                {"error": "Only administrators can manage leave permissions"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        employee = self.get_object()
         permission, created = LeavePermission.objects.get_or_create(employee=employee)
-        serializer = LeavePermissionSerializer(permission, data=request.data, partial=True)
+        serializer = LeavePermissionSerializer(permission, data=request.data)
+        
         if serializer.is_valid():
             serializer.save()
             send_notification.delay(

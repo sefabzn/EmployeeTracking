@@ -11,10 +11,85 @@ from notifications.tasks import send_notification
 from django.http import HttpResponse
 from notifications.models import Notification
 from django.utils import timezone
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from rest_framework.decorators import action
 
 class LeaveRequestViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveRequestSerializer
     permission_classes = [IsAuthenticated]
+    swagger_tags = ['Leave Management']
+
+    @swagger_auto_schema(
+        operation_description="List all leave requests. For admin users, shows all requests. For regular users, shows only their requests.",
+        manual_parameters=[
+            openapi.Parameter(
+                'status',
+                openapi.IN_QUERY,
+                description="Filter by leave request status",
+                type=openapi.TYPE_STRING,
+                enum=['pending', 'approved', 'rejected']
+            ),
+        ],
+        responses={
+            200: LeaveRequestSerializer(many=True),
+            401: "Unauthorized"
+        }
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Create a new leave request",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['start_date', 'end_date', 'reason'],
+            properties={
+                'start_date': openapi.Schema(type=openapi.TYPE_STRING, format='date'),
+                'end_date': openapi.Schema(type=openapi.TYPE_STRING, format='date'),
+                'reason': openapi.Schema(type=openapi.TYPE_STRING),
+            }
+        ),
+        responses={
+            201: LeaveRequestSerializer,
+            400: "Bad Request",
+            401: "Unauthorized"
+        }
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a specific leave request",
+        responses={
+            200: LeaveRequestSerializer,
+            404: "Not Found"
+        }
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Update a leave request",
+        request_body=LeaveRequestSerializer,
+        responses={
+            200: LeaveRequestSerializer,
+            400: "Bad Request",
+            404: "Not Found"
+        }
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Delete a leave request",
+        responses={
+            204: "No Content",
+            404: "Not Found"
+        }
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
     def get_queryset(self):
         if self.request.user.is_admin:
